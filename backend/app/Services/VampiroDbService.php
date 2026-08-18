@@ -14,12 +14,12 @@ class VampiroDbService
     public static function getPdo(): PDO
     {
         if (self::$pdo === null) {
-            $connection = env('DB_CONNECTION', 'mysql');
-            $host = env('DB_HOST', '127.0.0.1');
-            $port = env('DB_PORT', '3306');
-            $database = env('DB_DATABASE', 'bdvampiro');
-            $uid = env('DB_USERNAME', 'root');
-            $pwd = env('DB_PASSWORD', '');
+            $connection = config('database.default', env('DB_CONNECTION', 'sqlite'));
+            $database = config("database.connections.{$connection}.database", env('DB_DATABASE', 'demo_bdvampiro.sqlite'));
+            $host = config("database.connections.{$connection}.host", env('DB_HOST', '127.0.0.1'));
+            $port = config("database.connections.{$connection}.port", env('DB_PORT', '3306'));
+            $uid = config("database.connections.{$connection}.username", env('DB_USERNAME', 'root'));
+            $pwd = config("database.connections.{$connection}.password", env('DB_PASSWORD', ''));
 
             if ($connection === 'sqlite') {
                 try {
@@ -46,7 +46,7 @@ class VampiroDbService
                     ]);
                 } catch (PDOException $e) {
                     Log::error("Error conectando a MySQL bdvampiro: " . $e->getMessage());
-                    throw new Exception("Error conectando a MySQL bdvampiro en XAMPP: " . $e->getMessage());
+                    throw new Exception("Error conectando a MySQL bdvampiro: " . $e->getMessage());
                 }
             } else {
                 // Fallback a SQL Server por ODBC
@@ -135,7 +135,7 @@ class VampiroDbService
     public function paginate(string $baseSql, array $params = [], int $page = 1, int $perPage = 25, string $orderBy = '1 ASC'): array
     {
         $offset = max(0, ($page - 1) * $perPage);
-        $connection = env('DB_CONNECTION', 'mysql');
+        $connection = config('database.default', env('DB_CONNECTION', 'sqlite'));
         
         // Conteo total
         $countSql = "SELECT COUNT(*) as total_count FROM ({$baseSql}) AS subquery_count";
