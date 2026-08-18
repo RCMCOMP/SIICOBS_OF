@@ -15,20 +15,19 @@ RUN npm run build
 # ====================================================
 FROM php:8.3-fpm-alpine
 
-# Instalar dependencias del sistema y extensiones de PHP
+# Instalar Nginx, Supervisor y herramientas base
 RUN apk update && apk add --no-cache \
     nginx \
     supervisor \
     curl \
-    git \
-    libzip-dev \
-    libpng-dev \
-    oniguruma-dev \
-    icu-dev \
-    && docker-php-ext-install pdo pdo_mysql pdo_sqlite mbstring zip intl bcmath opcache
+    git
+
+# Instalar extensiones de PHP usando el instalador oficial recomendado
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
+RUN install-php-extensions pdo_mysql pdo_sqlite mbstring zip intl bcmath opcache
 
 # Instalar Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
