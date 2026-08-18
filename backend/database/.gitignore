@@ -1,1 +1,2 @@
-*.sqlite*
+*.sqlite
+!demo_bdvampiro.sqlite

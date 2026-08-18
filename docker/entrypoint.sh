@@ -1,17 +1,22 @@
 #!/bin/sh
 set -e
 
-# Si no existe archivo .env en producción, crear uno a partir de variables de entorno
+# Si no existe .env en el contenedor, copiar desde .env.example
 if [ ! -f /var/www/html/.env ]; then
-    echo "Configurando entorno de producción..."
-    touch /var/www/html/.env
+    echo "Copiando .env.example a .env..."
+    cp /var/www/html/.env.example /var/www/html/.env
 fi
 
-# Ajustar permisos
+# Asegurar permisos de escritura
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database
 
-# Ejecutar optimizaciones de Laravel
+# Generar APP_KEY si falta
+php artisan key:generate --force || true
+
+# Limpiar y regenerar cache de configuración y rutas
+php artisan config:clear || true
+php artisan route:clear || true
 php artisan config:cache || true
 php artisan route:cache || true
 
