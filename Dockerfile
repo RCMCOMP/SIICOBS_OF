@@ -11,9 +11,9 @@ COPY frontend/ ./
 RUN npm run build
 
 # ====================================================
-#  ETAPA 2: Servidor de Producción PHP 8.3 + NGINX
+#  ETAPA 2: Servidor de Producción PHP 8.4 + NGINX (Laravel 13)
 # ====================================================
-FROM php:8.3-fpm-alpine
+FROM php:8.4-fpm-alpine
 
 # Instalar Nginx, Supervisor y herramientas base
 RUN apk update && apk add --no-cache \
@@ -22,7 +22,7 @@ RUN apk update && apk add --no-cache \
     curl \
     git
 
-# Instalar extensiones de PHP usando el instalador oficial recomendado
+# Instalar extensiones de PHP requeridas
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
 RUN install-php-extensions pdo_mysql pdo_sqlite mbstring zip intl bcmath opcache
 
@@ -38,7 +38,7 @@ COPY backend/ /var/www/html/
 COPY --from=frontend-builder /app/backend/public/dist /var/www/html/public/dist
 
 # Instalar dependencias PHP de producción
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-req=php+
 
 # Permisos de almacenamiento y base de datos
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/database \
