@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use App\Services\VampiroDbService;
 
 class DespachoController extends Controller
@@ -38,7 +39,7 @@ class DespachoController extends Controller
         $sql .= " ORDER BY f.vfraFecVen ASC LIMIT 50";
         $units = $this->db->select($sql, $params);
 
-        return response()->json([
+        return new JsonResponse([
             'success' => true,
             'units' => $units
         ]);
@@ -49,7 +50,7 @@ class DespachoController extends Controller
         $sql = "SELECT vuntCodUnt as id, vuntNombre as nombre, vuntDirecc as direccion, vuntTelefo as telefono FROM vamUniTran ORDER BY vuntNombre ASC";
         $centers = $this->db->select($sql);
 
-        return response()->json([
+        return new JsonResponse([
             'success' => true,
             'data' => $centers
         ]);
@@ -65,7 +66,7 @@ class DespachoController extends Controller
             $this->db->update("UPDATE vamFraccio SET vfraEstFra = '3' WHERE vfraNroFra = ?", [(int)$uId]);
         }
 
-        return response()->json([
+        return new JsonResponse([
             'success' => true,
             'message' => 'Despacho registrado correctamente. ' . count($unitIds) . ' unidades entregadas a ' . $paciente
         ]);
@@ -78,7 +79,7 @@ class DespachoController extends Controller
         $sqlCabecera = "SELECT s.vvenNroVen, s.vvenSolUnt as nro_nota, s.vvenFecSol as fecha,
                                u.vuntNombre as hospital, s.vnombrepaciente as paciente,
                                s.vvenCINomRec as ci_receptor, s.vvenNomRec as recibe,
-                               s.vvenTotGrl as total, s.vvenDiag as diagnostico,
+                               s.vvenTotGrl as total, s.vvenConcep as concepto,
                                r.vresNombre as responsable
                         FROM vamVenSoli s
                         LEFT JOIN vamUniTran u ON s.vuntCodUnt = u.vuntCodUnt
@@ -88,26 +89,23 @@ class DespachoController extends Controller
         $nota = $this->db->selectOne($sqlCabecera, [$nroVen]);
         
         if (!$nota) {
-            return response()->json([
+            return new JsonResponse([
                 'success' => false,
                 'message' => 'Código de Despacho no encontrado.'
             ], 404);
         }
         
-        $sqlDetalle = "SELECT h.vvenSecHemo, p.vproDescri as producto,
+        $sqlDetalle = "SELECT h.vvenNroEti as tubuladura, p.vproDescri as producto,
                               g.vgrsGruABO + g.vgrsTipoRH as grupo_sanguineo,
-                              h.vexdTubula as tubuladura, h.vexdNroExd as codigo_extraccion,
                               h.vproPrecio as precio
                        FROM vamVenHemo h
                        LEFT JOIN vamProduct p ON h.vproNroPro = p.vproNroPro
-                       LEFT JOIN vamProdGrs pg ON h.vprgCodPrg = pg.vprgCodPrg
-                       LEFT JOIN vamGrupSan g ON pg.vgrsCodGrs = g.vgrsCodGrs
-                       WHERE h.vvenNroVen = ?
-                       ORDER BY h.vvenSecHemo ASC";
+                       LEFT JOIN vamGrupSan g ON h.vgrsCodGrs = g.vgrsCodGrs
+                       WHERE h.vvenNroVen = ?";
         
         $items = $this->db->select($sqlDetalle, [$nroVen]);
         
-        return response()->json([
+        return new JsonResponse([
             'success' => true,
             'nota' => $nota,
             'items' => $items

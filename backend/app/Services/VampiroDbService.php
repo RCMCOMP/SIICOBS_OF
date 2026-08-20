@@ -14,19 +14,21 @@ class VampiroDbService
     public static function getPdo(): PDO
     {
         if (self::$pdo === null) {
-            $connection = config('database.default', env('DB_CONNECTION', 'sqlite'));
-            $database = config("database.connections.{$connection}.database", env('DB_DATABASE', 'demo_bdvampiro.sqlite'));
-            $host = config("database.connections.{$connection}.host", env('DB_HOST', '127.0.0.1'));
-            $port = config("database.connections.{$connection}.port", env('DB_PORT', '3306'));
-            $uid = config("database.connections.{$connection}.username", env('DB_USERNAME', 'root'));
-            $pwd = config("database.connections.{$connection}.password", env('DB_PASSWORD', ''));
+            $hasConfig = function_exists('app') && app()->bound('config');
+            
+            $connection = $hasConfig ? config('database.default', env('DB_CONNECTION', 'mysql')) : env('DB_CONNECTION', 'mysql');
+            $database = $hasConfig ? config("database.connections.{$connection}.database", env('DB_DATABASE', 'bdvampiro')) : env('DB_DATABASE', 'bdvampiro');
+            $host = $hasConfig ? config("database.connections.{$connection}.host", env('DB_HOST', '127.0.0.1')) : env('DB_HOST', '127.0.0.1');
+            $port = $hasConfig ? config("database.connections.{$connection}.port", env('DB_PORT', '3306')) : env('DB_PORT', '3306');
+            $uid = $hasConfig ? config("database.connections.{$connection}.username", env('DB_USERNAME', 'root')) : env('DB_USERNAME', 'root');
+            $pwd = $hasConfig ? config("database.connections.{$connection}.password", env('DB_PASSWORD', '')) : env('DB_PASSWORD', '');
 
             if ($connection === 'sqlite') {
                 try {
                     $dbPath = $database;
-                    if (!file_exists($dbPath) && file_exists(database_path($dbPath))) {
+                    if (!file_exists($dbPath) && function_exists('database_path') && file_exists(database_path($dbPath))) {
                         $dbPath = database_path($dbPath);
-                    } elseif (!file_exists($dbPath) && file_exists(database_path('demo_bdvampiro.sqlite'))) {
+                    } elseif (!file_exists($dbPath) && function_exists('database_path') && file_exists(database_path('demo_bdvampiro.sqlite'))) {
                         $dbPath = database_path('demo_bdvampiro.sqlite');
                     }
                     self::$pdo = new PDO("sqlite:{$dbPath}", null, null, [
@@ -135,7 +137,8 @@ class VampiroDbService
     public function paginate(string $baseSql, array $params = [], int $page = 1, int $perPage = 25, string $orderBy = '1 ASC'): array
     {
         $offset = max(0, ($page - 1) * $perPage);
-        $connection = config('database.default', env('DB_CONNECTION', 'sqlite'));
+        $hasConfig = function_exists('app') && app()->bound('config');
+        $connection = $hasConfig ? config('database.default', env('DB_CONNECTION', 'mysql')) : env('DB_CONNECTION', 'mysql');
         
         // Conteo total
         $countSql = "SELECT COUNT(*) as total_count FROM ({$baseSql}) AS subquery_count";
