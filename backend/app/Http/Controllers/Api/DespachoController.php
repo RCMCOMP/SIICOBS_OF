@@ -20,7 +20,7 @@ class DespachoController extends Controller
         $prodId = (int)$request->input('producto_id', 3);
         $grpId = (int)$request->input('grupo_id', 0);
 
-        $sql = "SELECT TOP 50 f.vfraNroFra as id, p.vproDescri as producto,
+        $sql = "SELECT f.vfraNroFra as id, p.vproDescri as producto,
                        g.vgrsGruABO + g.vgrsTipoRH as grupo_sanguineo,
                        f.vfraFecVen as fecha_vencimiento,
                        f.vfraCantiml as volumen_ml
@@ -35,7 +35,7 @@ class DespachoController extends Controller
             $params[] = $grpId;
         }
 
-        $sql .= " ORDER BY f.vfraFecVen ASC";
+        $sql .= " ORDER BY f.vfraFecVen ASC LIMIT 50";
         $units = $this->db->select($sql, $params);
 
         return response()->json([
@@ -68,6 +68,49 @@ class DespachoController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Despacho registrado correctamente. ' . count($unitIds) . ' unidades entregadas a ' . $paciente
+        ]);
+    }
+
+    public function getNotaRemision($codigo)
+    {
+        $nroVen = (int)$codigo;
+        
+        $sqlCabecera = "SELECT s.vvenNroVen, s.vvenSolUnt as nro_nota, s.vvenFecSol as fecha,
+                               u.vuntNombre as hospital, s.vnombrepaciente as paciente,
+                               s.vvenCINomRec as ci_receptor, s.vvenNomRec as recibe,
+                               s.vvenTotGrl as total, s.vvenDiag as diagnostico,
+                               r.vresNombre as responsable
+                        FROM vamVenSoli s
+                        LEFT JOIN vamUniTran u ON s.vuntCodUnt = u.vuntCodUnt
+                        LEFT JOIN vamRespons r ON s.vresCodRes = r.vresCodRes
+                        WHERE s.vvenNroVen = ?";
+        
+        $nota = $this->db->selectOne($sqlCabecera, [$nroVen]);
+        
+        if (!$nota) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Código de Despacho no encontrado.'
+            ], 404);
+        }
+        
+        $sqlDetalle = "SELECT h.vvenSecHemo, p.vproDescri as producto,
+                              g.vgrsGruABO + g.vgrsTipoRH as grupo_sanguineo,
+                              h.vexdTubula as tubuladura, h.vexdNroExd as codigo_extraccion,
+                              h.vproPrecio as precio
+                       FROM vamVenHemo h
+                       LEFT JOIN vamProduct p ON h.vproNroPro = p.vproNroPro
+                       LEFT JOIN vamProdGrs pg ON h.vprgCodPrg = pg.vprgCodPrg
+                       LEFT JOIN vamGrupSan g ON pg.vgrsCodGrs = g.vgrsCodGrs
+                       WHERE h.vvenNroVen = ?
+                       ORDER BY h.vvenSecHemo ASC";
+        
+        $items = $this->db->select($sqlDetalle, [$nroVen]);
+        
+        return response()->json([
+            'success' => true,
+            'nota' => $nota,
+            'items' => $items
         ]);
     }
 }

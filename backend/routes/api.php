@@ -87,6 +87,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/centros', [DespachoController::class, 'getTransfusionCenters']);
         Route::get('/disponibles', [DespachoController::class, 'getAvailableUnits']);
         Route::post('/entregar', [DespachoController::class, 'deliverUnits']);
+        Route::get('/nota-remision/{codigo}', [DespachoController::class, 'getNotaRemision']);
     });
 
     // Módulo Facturación
